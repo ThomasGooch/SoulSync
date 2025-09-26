@@ -15,4 +15,8 @@
     <ProjectReference Include="..\SoulSync.Services\SoulSync.Services.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Models\" />
+  </ItemGroup>
+
 </Project>
