@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="GenericAgents.AI" Version="1.2.0" />
+    <PackageReference Include="GenericAgents.Communication" Version="1.2.0" />
+    <PackageReference Include="GenericAgents.Orchestration" Version="1.2.0" />
+    <PackageReference Include="GenericAgents.Registry" Version="1.2.0" />
+    <PackageReference Include="GenericAgents.Tools" Version="1.2.0" />
+    <PackageReference Include="GenericAgents.Tools.Samples" Version="1.2.0" />
+  </ItemGroup>
+
+</Project>

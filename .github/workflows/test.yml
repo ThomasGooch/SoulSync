@@ -1,0 +1,157 @@
+name: Tests
+
+on:
+  workflow_run:
+    workflows: ["Build"]
+    types: [completed]
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    # Only run tests if build was successful
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'pull_request' }}
+    
+    strategy:
+      matrix:
+        test-project: [
+          'tests/SoulSync.Core.Tests',
+          'tests/SoulSync.Agents.Tests', 
+          'tests/SoulSync.Services.Tests',
+          'tests/SoulSync.Web.Tests'
+        ]
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+          
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build solution
+      run: dotnet build --no-restore --configuration Release
+      
+    - name: Run tests for ${{ matrix.test-project }}
+      run: |
+        dotnet test ${{ matrix.test-project }} \
+          --no-build \
+          --configuration Release \
+          --logger trx \
+          --logger "console;verbosity=detailed" \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./TestResults/${{ matrix.test-project }}
+          
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.test-project }}
+        path: ./TestResults/${{ matrix.test-project }}/
+        retention-days: 7
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: test
+    if: always()
+    
+    steps:
+    - name: Download test artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./all-test-results
+        pattern: test-results-*
+        merge-multiple: true
+        
+    - name: Generate test summary
+      run: |
+        echo "# 🧪 Test Results Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ needs.test.result }}" == "success" ]; then
+          echo "✅ **All tests passed successfully!**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Project | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| SoulSync.Core.Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| SoulSync.Agents.Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| SoulSync.Services.Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| SoulSync.Web.Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Ready for deployment** 🚀" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Some tests failed**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please review the test results and fix failing tests before merging." >> $GITHUB_STEP_SUMMARY
+        fi
+
+  code-coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    needs: test
+    if: success()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Run tests with coverage
+      run: |
+        dotnet test \
+          --configuration Release \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./coverage
+          
+    - name: Install ReportGenerator
+      run: dotnet tool install -g dotnet-reportgenerator-globaltool
+      
+    - name: Generate coverage report
+      run: |
+        reportgenerator \
+          -reports:"coverage/**/coverage.cobertura.xml" \
+          -targetdir:"coverage/report" \
+          -reporttypes:"Html;JsonSummary"
+          
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage/report/
+        retention-days: 30
+        
+    - name: Coverage summary
+      run: |
+        if [ -f "coverage/report/Summary.json" ]; then
+          echo "📊 **Code Coverage Summary**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          # Extract coverage percentage from JSON summary
+          coverage=$(cat coverage/report/Summary.json | grep -o '"linecoverage":"[^"]*"' | cut -d'"' -f4)
+          echo "**Line Coverage**: ${coverage}%" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "View detailed coverage report in the artifacts." >> $GITHUB_STEP_SUMMARY
+        fi

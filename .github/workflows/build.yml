@@ -1,0 +1,64 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    name: Build Solution
+    runs-on: ubuntu-latest
+    
+    outputs:
+      build-success: ${{ steps.build.outcome == 'success' }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+          
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build solution
+      id: build
+      run: |
+        dotnet build --no-restore --configuration Release --verbosity minimal
+        echo "Build completed with exit code: $?"
+        
+    - name: Upload build artifacts
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: |
+          src/*/bin/Release/
+          !src/*/bin/Release/**/ref/
+          !src/*/bin/Release/**/*.pdb
+        retention-days: 1
+        
+    - name: Build status summary
+      run: |
+        if [ "${{ steps.build.outcome }}" == "success" ]; then
+          echo "✅ Build completed successfully"
+          echo "- All projects compiled without errors"
+          echo "- NuGet packages restored successfully"
+          echo "- Ready for testing phase"
+        else
+          echo "❌ Build failed"
+          exit 1
+        fi
