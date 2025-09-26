@@ -2,7 +2,7 @@
 @using SoulSync.Core.Enums
 @using SoulSync.Agents.Registration
 @using SoulSync.Agents.Analysis
-@using SoulSync.Web.Models
+@using System.ComponentModel.DataAnnotations
 @inject UserRegistrationAgent UserRegistrationAgent
 @inject ProfileAnalysisAgent ProfileAnalysisAgent
 @inject IJSRuntime JSRuntime
@@ -348,5 +348,67 @@
     public void Dispose()
     {
         aiAnalysisTimer?.Dispose();
+    }
+
+    public class RegistrationViewModel
+    {
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "First name is required")]
+        [StringLength(50, MinimumLength = 2, ErrorMessage = "First name must be between 2 and 50 characters")]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Last name is required")]
+        [StringLength(50, MinimumLength = 2, ErrorMessage = "Last name must be between 2 and 50 characters")]
+        public string LastName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Date of birth is required")]
+        [DataType(DataType.Date)]
+        public DateTime? DateOfBirth { get; set; }
+
+        [Required(ErrorMessage = "Password is required")]
+        [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters long")]
+        [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\da-zA-Z]).{8,}$", 
+            ErrorMessage = "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character")]
+        public string Password { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Please confirm your password")]
+        [Compare("Password", ErrorMessage = "Passwords do not match")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+
+        [StringLength(500, ErrorMessage = "Bio cannot exceed 500 characters")]
+        public string? Bio { get; set; }
+
+        public string? Interests { get; set; }
+
+        [StringLength(100, ErrorMessage = "Location cannot exceed 100 characters")]
+        public string? Location { get; set; }
+
+        [StringLength(100, ErrorMessage = "Occupation cannot exceed 100 characters")]
+        public string? Occupation { get; set; }
+
+        [Required(ErrorMessage = "Please select your gender identity")]
+        public GenderIdentity? GenderIdentity { get; set; }
+
+        public List<GenderIdentity> InterestedInGenders { get; set; } = new();
+
+        [Range(18, 100, ErrorMessage = "Age must be between 18 and 100")]
+        public int? MinAge { get; set; }
+
+        [Range(18, 100, ErrorMessage = "Age must be between 18 and 100")]
+        public int? MaxAge { get; set; }
+
+        [Range(1, 1000, ErrorMessage = "Distance must be between 1 and 1000 km")]
+        public int? MaxDistanceKm { get; set; }
+
+        [Required(ErrorMessage = "You must agree to the terms and conditions")]
+        public bool AgreeToTerms { get; set; }
+
+        public string? AIInsights { get; set; }
+        public bool IsAnalyzing { get; set; }
+        public bool IsRegistering { get; set; }
+        public string? RegistrationError { get; set; }
     }
 }
