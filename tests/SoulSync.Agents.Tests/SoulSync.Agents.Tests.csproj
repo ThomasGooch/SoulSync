@@ -20,4 +20,9 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\SoulSync.Agents\SoulSync.Agents.csproj" />
+    <ProjectReference Include="..\..\src\SoulSync.Core\SoulSync.Core.csproj" />
+  </ItemGroup>
+
 </Project>

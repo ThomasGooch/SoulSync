@@ -1,7 +1,83 @@
-﻿@page "/"
+@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>SoulSync - AI-Powered Dating</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="hero-section bg-gradient text-white py-5">
+    <div class="container text-center">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold mb-4">💕 Find Your SoulSync</h1>
+                <p class="lead mb-4">
+                    Where AI meets authentic connections. Let our intelligent matching system help you find meaningful relationships based on deep compatibility analysis.
+                </p>
+                <div class="d-grid gap-2 d-md-block">
+                    <a href="/register" class="btn btn-light btn-lg px-4 me-md-2">
+                        ✨ Start Your Journey
+                    </a>
+                    <a href="/login" class="btn btn-outline-light btn-lg px-4">
+                        Welcome Back
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-Welcome to your new app.
+<div class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="display-1 text-primary mb-3">🤖</div>
+                    <h5 class="card-title">AI-Powered Matching</h5>
+                    <p class="card-text">Our advanced AI analyzes your personality, interests, and preferences to find truly compatible matches.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="display-1 text-primary mb-3">💬</div>
+                    <h5 class="card-title">Smart Conversations</h5>
+                    <p class="card-text">Get AI-powered conversation suggestions and relationship coaching to make meaningful connections.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="display-1 text-primary mb-3">🔒</div>
+                    <h5 class="card-title">Safe & Secure</h5>
+                    <p class="card-text">Advanced safety monitoring and verification ensure a secure environment for authentic connections.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-lg-6 offset-lg-3 text-center">
+            <h2 class="mb-4">Ready to Find Your Perfect Match?</h2>
+            <p class="lead mb-4">Join thousands of singles who have found meaningful relationships through SoulSync's intelligent matching system.</p>
+            <a href="/register" class="btn btn-primary btn-lg">
+                Create Your Profile Now
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 60vh;
+        display: flex;
+        align-items: center;
+    }
+    
+    .card {
+        transition: transform 0.2s;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+    }
+</style>
