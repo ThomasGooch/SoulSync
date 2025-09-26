@@ -7,8 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="GenericAgents.DI" Version="1.2.0" />
     <PackageReference Include="GenericAgents.Observability" Version="1.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.2.1" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SoulSync.Core\SoulSync.Core.csproj" />
+    <ProjectReference Include="..\SoulSync.Data\SoulSync.Data.csproj" />
   </ItemGroup>
 
 </Project>

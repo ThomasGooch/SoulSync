@@ -1,0 +1,414 @@
+@page "/register"
+@using SoulSync.Core.Enums
+@using SoulSync.Agents.Registration
+@using SoulSync.Agents.Analysis
+@using System.ComponentModel.DataAnnotations
+@inject UserRegistrationAgent UserRegistrationAgent
+@inject ProfileAnalysisAgent ProfileAnalysisAgent
+@inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
+
+<PageTitle>Join SoulSync - Find Your Perfect Match</PageTitle>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">✨ Create Your SoulSync Profile</h3>
+                    <p class="mb-0">Let AI help you find your perfect match</p>
+                </div>
+                <div class="card-body">
+                    <EditForm Model="@registrationModel" OnValidSubmit="@HandleRegistration" novalidate>
+                        <DataAnnotationsValidator />
+                        
+                        @if (!string.IsNullOrEmpty(registrationModel.RegistrationError))
+                        {
+                            <div class="alert alert-danger" role="alert">
+                                @registrationModel.RegistrationError
+                            </div>
+                        }
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5 class="text-primary mb-3">Basic Information</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email Address</label>
+                                    <InputText @bind-Value="registrationModel.Email" class="form-control" id="email" placeholder="your.email@example.com" />
+                                    <ValidationMessage For="@(() => registrationModel.Email)" class="text-danger" />
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="firstName" class="form-label">First Name</label>
+                                        <InputText @bind-Value="registrationModel.FirstName" class="form-control" id="firstName" placeholder="John" @oninput="@OnProfileFieldChanged" />
+                                        <ValidationMessage For="@(() => registrationModel.FirstName)" class="text-danger" />
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="lastName" class="form-label">Last Name</label>
+                                        <InputText @bind-Value="registrationModel.LastName" class="form-control" id="lastName" placeholder="Doe" @oninput="@OnProfileFieldChanged" />
+                                        <ValidationMessage For="@(() => registrationModel.LastName)" class="text-danger" />
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="dateOfBirth" class="form-label">Date of Birth</label>
+                                    <InputDate @bind-Value="registrationModel.DateOfBirth" class="form-control" id="dateOfBirth" />
+                                    <ValidationMessage For="@(() => registrationModel.DateOfBirth)" class="text-danger" />
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">Password</label>
+                                    <InputText @bind-Value="registrationModel.Password" type="password" class="form-control" id="password" />
+                                    <ValidationMessage For="@(() => registrationModel.Password)" class="text-danger" />
+                                    <div class="form-text">Must contain uppercase, lowercase, number, and special character</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="confirmPassword" class="form-label">Confirm Password</label>
+                                    <InputText @bind-Value="registrationModel.ConfirmPassword" type="password" class="form-control" id="confirmPassword" />
+                                    <ValidationMessage For="@(() => registrationModel.ConfirmPassword)" class="text-danger" />
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <h5 class="text-primary mb-3">Profile Details</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="bio" class="form-label">Tell us about yourself</label>
+                                    <InputTextArea @bind-Value="registrationModel.Bio" class="form-control" id="bio" rows="4" 
+                                                 placeholder="Share what makes you unique..." @oninput="@OnProfileFieldChanged" />
+                                    <ValidationMessage For="@(() => registrationModel.Bio)" class="text-danger" />
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="interests" class="form-label">Your Interests</label>
+                                    <InputTextArea @bind-Value="registrationModel.Interests" class="form-control" id="interests" rows="3" 
+                                                 placeholder="Music, hiking, cooking, travel..." @oninput="@OnProfileFieldChanged" />
+                                    <ValidationMessage For="@(() => registrationModel.Interests)" class="text-danger" />
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="location" class="form-label">Location</label>
+                                        <InputText @bind-Value="registrationModel.Location" class="form-control" id="location" placeholder="City, Country" />
+                                        <ValidationMessage For="@(() => registrationModel.Location)" class="text-danger" />
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="occupation" class="form-label">Occupation</label>
+                                        <InputText @bind-Value="registrationModel.Occupation" class="form-control" id="occupation" placeholder="Software Engineer" />
+                                        <ValidationMessage For="@(() => registrationModel.Occupation)" class="text-danger" />
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="genderIdentity" class="form-label">Gender Identity</label>
+                                    <InputSelect @bind-Value="registrationModel.GenderIdentity" class="form-control" id="genderIdentity">
+                                        <option value="">Select your gender identity</option>
+                                        @foreach (var gender in Enum.GetValues<GenderIdentity>())
+                                        {
+                                            <option value="@gender">@gender</option>
+                                        }
+                                    </InputSelect>
+                                    <ValidationMessage For="@(() => registrationModel.GenderIdentity)" class="text-danger" />
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Interested In</label>
+                                    <div class="border rounded p-2">
+                                        @foreach (var gender in Enum.GetValues<GenderIdentity>())
+                                        {
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       checked="@registrationModel.InterestedInGenders.Contains(gender)"
+                                                       @onchange="@(e => ToggleInterestedInGender(gender, (bool)e.Value!))" 
+                                                       id="interested_@gender" />
+                                                <label class="form-check-label" for="interested_@gender">
+                                                    @gender
+                                                </label>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <h5 class="text-primary mb-3">Matching Preferences</h5>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="minAge" class="form-label">Min Age</label>
+                                        <InputNumber @bind-Value="registrationModel.MinAge" class="form-control" id="minAge" min="18" max="100" />
+                                        <ValidationMessage For="@(() => registrationModel.MinAge)" class="text-danger" />
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="maxAge" class="form-label">Max Age</label>
+                                        <InputNumber @bind-Value="registrationModel.MaxAge" class="form-control" id="maxAge" min="18" max="100" />
+                                        <ValidationMessage For="@(() => registrationModel.MaxAge)" class="text-danger" />
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="maxDistance" class="form-label">Max Distance (km)</label>
+                                    <InputNumber @bind-Value="registrationModel.MaxDistanceKm" class="form-control" id="maxDistance" min="1" max="1000" />
+                                    <ValidationMessage For="@(() => registrationModel.MaxDistanceKm)" class="text-danger" />
+                                </div>
+
+                                <div class="mb-3 form-check">
+                                    <InputCheckbox @bind-Value="registrationModel.AgreeToTerms" class="form-check-input" id="agreeTerms" />
+                                    <label class="form-check-label" for="agreeTerms">
+                                        I agree to the Terms of Service and Privacy Policy
+                                    </label>
+                                    <ValidationMessage For="@(() => registrationModel.AgreeToTerms)" class="text-danger" />
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">🤖 AI Insights</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        @if (registrationModel.IsAnalyzing)
+                                        {
+                                            <div class="d-flex align-items-center">
+                                                <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                                <span class="text-muted">AI is analyzing your profile...</span>
+                                            </div>
+                                        }
+                                        else if (!string.IsNullOrEmpty(registrationModel.AIInsights))
+                                        {
+                                            <div class="text-success">
+                                                <strong>Profile Analysis:</strong>
+                                                <p class="mb-0 mt-2">@registrationModel.AIInsights</p>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <p class="text-muted mb-0">Fill out your profile to see AI-powered insights about your personality and compatibility factors.</p>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@registrationModel.IsRegistering">
+                                    @if (registrationModel.IsRegistering)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        <span>Creating Your Profile...</span>
+                                    }
+                                    else
+                                    {
+                                        <span>✨ Create My SoulSync Profile</span>
+                                    }
+                                </button>
+                            </div>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private RegistrationViewModel registrationModel = new();
+    private Timer? aiAnalysisTimer;
+
+    protected override void OnInitialized()
+    {
+        registrationModel.MinAge = 25;
+        registrationModel.MaxAge = 35;
+        registrationModel.MaxDistanceKm = 50;
+    }
+
+    private void OnProfileFieldChanged(ChangeEventArgs e)
+    {
+        aiAnalysisTimer?.Dispose();
+        aiAnalysisTimer = new Timer(async _ => await AnalyzeProfileAsync(), null, 2000, Timeout.Infinite);
+    }
+
+    private async Task AnalyzeProfileAsync()
+    {
+        if (HasMinimumProfileData())
+        {
+            registrationModel.IsAnalyzing = true;
+            await InvokeAsync(StateHasChanged);
+
+            try
+            {
+                var analysisResult = await ProfileAnalysisAgent.ExecuteAsync(new SoulSync.Core.Agents.AgentRequest
+                {
+                    Parameters = new Dictionary<string, object>
+                    {
+                        ["bio"] = registrationModel.Bio ?? "",
+                        ["interests"] = registrationModel.Interests ?? "",
+                        ["firstName"] = registrationModel.FirstName ?? "",
+                        ["occupation"] = registrationModel.Occupation ?? ""
+                    }
+                });
+
+                if (analysisResult.IsSuccess && analysisResult.Data is Dictionary<string, object> data && data.ContainsKey("insights"))
+                {
+                    registrationModel.AIInsights = data["insights"]?.ToString();
+                }
+                else
+                {
+                    registrationModel.AIInsights = "Unable to generate insights at this time.";
+                }
+            }
+            catch (Exception)
+            {
+                registrationModel.AIInsights = "AI analysis temporarily unavailable.";
+            }
+            finally
+            {
+                registrationModel.IsAnalyzing = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
+    private bool HasMinimumProfileData()
+    {
+        return !string.IsNullOrWhiteSpace(registrationModel.Bio) || 
+               !string.IsNullOrWhiteSpace(registrationModel.Interests) ||
+               (!string.IsNullOrWhiteSpace(registrationModel.FirstName) && 
+                !string.IsNullOrWhiteSpace(registrationModel.Occupation));
+    }
+
+    private void ToggleInterestedInGender(GenderIdentity gender, bool isSelected)
+    {
+        if (isSelected && !registrationModel.InterestedInGenders.Contains(gender))
+        {
+            registrationModel.InterestedInGenders.Add(gender);
+        }
+        else if (!isSelected && registrationModel.InterestedInGenders.Contains(gender))
+        {
+            registrationModel.InterestedInGenders.Remove(gender);
+        }
+    }
+
+    private async Task HandleRegistration()
+    {
+        registrationModel.IsRegistering = true;
+        registrationModel.RegistrationError = null;
+
+        try
+        {
+            var registrationResult = await UserRegistrationAgent.ExecuteAsync(new SoulSync.Core.Agents.AgentRequest
+            {
+                Parameters = new Dictionary<string, object>
+                {
+                    ["email"] = registrationModel.Email,
+                    ["firstName"] = registrationModel.FirstName,
+                    ["lastName"] = registrationModel.LastName,
+                    ["dateOfBirth"] = registrationModel.DateOfBirth?.ToString("yyyy-MM-dd") ?? "",
+                    ["password"] = registrationModel.Password,
+                    ["bio"] = registrationModel.Bio ?? "",
+                    ["interests"] = registrationModel.Interests ?? "",
+                    ["location"] = registrationModel.Location ?? "",
+                    ["occupation"] = registrationModel.Occupation ?? "",
+                    ["genderIdentity"] = registrationModel.GenderIdentity?.ToString() ?? "",
+                    ["interestedInGenders"] = string.Join(",", registrationModel.InterestedInGenders.Select(g => g.ToString())),
+                    ["minAge"] = registrationModel.MinAge?.ToString() ?? "",
+                    ["maxAge"] = registrationModel.MaxAge?.ToString() ?? "",
+                    ["maxDistanceKm"] = registrationModel.MaxDistanceKm?.ToString() ?? ""
+                }
+            });
+
+            if (registrationResult.IsSuccess)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "🎉 Welcome to SoulSync! Your profile has been created successfully.");
+                Navigation.NavigateTo("/login");
+            }
+            else
+            {
+                registrationModel.RegistrationError = registrationResult.ErrorMessage ?? "Registration failed. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            registrationModel.RegistrationError = $"An unexpected error occurred: {ex.Message}";
+        }
+        finally
+        {
+            registrationModel.IsRegistering = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        aiAnalysisTimer?.Dispose();
+    }
+
+    public class RegistrationViewModel
+    {
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "First name is required")]
+        [StringLength(50, MinimumLength = 2, ErrorMessage = "First name must be between 2 and 50 characters")]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Last name is required")]
+        [StringLength(50, MinimumLength = 2, ErrorMessage = "Last name must be between 2 and 50 characters")]
+        public string LastName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Date of birth is required")]
+        [DataType(DataType.Date)]
+        public DateTime? DateOfBirth { get; set; }
+
+        [Required(ErrorMessage = "Password is required")]
+        [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters long")]
+        [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\da-zA-Z]).{8,}$", 
+            ErrorMessage = "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character")]
+        public string Password { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Please confirm your password")]
+        [Compare("Password", ErrorMessage = "Passwords do not match")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+
+        [StringLength(500, ErrorMessage = "Bio cannot exceed 500 characters")]
+        public string? Bio { get; set; }
+
+        public string? Interests { get; set; }
+
+        [StringLength(100, ErrorMessage = "Location cannot exceed 100 characters")]
+        public string? Location { get; set; }
+
+        [StringLength(100, ErrorMessage = "Occupation cannot exceed 100 characters")]
+        public string? Occupation { get; set; }
+
+        [Required(ErrorMessage = "Please select your gender identity")]
+        public GenderIdentity? GenderIdentity { get; set; }
+
+        public List<GenderIdentity> InterestedInGenders { get; set; } = new();
+
+        [Range(18, 100, ErrorMessage = "Age must be between 18 and 100")]
+        public int? MinAge { get; set; }
+
+        [Range(18, 100, ErrorMessage = "Age must be between 18 and 100")]
+        public int? MaxAge { get; set; }
+
+        [Range(1, 1000, ErrorMessage = "Distance must be between 1 and 1000 km")]
+        public int? MaxDistanceKm { get; set; }
+
+        [Required(ErrorMessage = "You must agree to the terms and conditions")]
+        public bool AgreeToTerms { get; set; }
+
+        public string? AIInsights { get; set; }
+        public bool IsAnalyzing { get; set; }
+        public bool IsRegistering { get; set; }
+        public string? RegistrationError { get; set; }
+    }
+}

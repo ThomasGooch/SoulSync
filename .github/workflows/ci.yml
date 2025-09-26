@@ -1,0 +1,290 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    name: Build Solution
+    runs-on: ubuntu-latest
+    
+    outputs:
+      build-success: ${{ steps.build.outcome == 'success' }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+          
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build solution
+      id: build
+      run: |
+        dotnet build --no-restore --configuration Release --verbosity minimal
+        echo "Build completed with exit code: $?"
+        
+    - name: Upload build artifacts
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: |
+          src/*/bin/Release/
+          !src/*/bin/Release/**/ref/
+          !src/*/bin/Release/**/*.pdb
+        retention-days: 1
+        
+    - name: Build status summary
+      run: |
+        if [ "${{ steps.build.outcome }}" == "success" ]; then
+          echo "✅ Build completed successfully"
+          echo "- All projects compiled without errors"
+          echo "- NuGet packages restored successfully"
+          echo "- Ready for testing phase"
+        else
+          echo "❌ Build failed"
+          exit 1
+        fi
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: build
+    if: success()
+    
+    strategy:
+      matrix:
+        test-project: [
+          'tests/SoulSync.Core.Tests',
+          'tests/SoulSync.Agents.Tests', 
+          'tests/SoulSync.Services.Tests',
+          'tests/SoulSync.Web.Tests'
+        ]
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+          
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build solution
+      run: dotnet build --no-restore --configuration Release
+      
+    - name: Set project safe name
+      run: |
+        PROJECT_SAFE_NAME="${{ matrix.test-project }}"
+        PROJECT_SAFE_NAME="${PROJECT_SAFE_NAME//\//-}"
+        echo "PROJECT_SAFE_NAME=${PROJECT_SAFE_NAME}" >> $GITHUB_ENV
+
+    - name: Run tests for ${{ matrix.test-project }}
+      run: |
+        dotnet test ${{ matrix.test-project }} \
+          --no-build \
+          --configuration Release \
+          --logger trx \
+          --logger "console;verbosity=detailed" \
+          --collect:"XPlat Code Coverage" \
+          --results-directory "./TestResults/${PROJECT_SAFE_NAME}"
+          
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ env.PROJECT_SAFE_NAME }}
+        path: ./TestResults/${{ env.PROJECT_SAFE_NAME }}/
+        retention-days: 7
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: test
+    if: always()
+    
+    steps:
+    - name: Download test artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./all-test-results
+        pattern: test-results-*
+        merge-multiple: true
+        
+    - name: Generate test summary
+      run: |
+        echo "# 🧪 Test Results Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ needs.test.result }}" == "success" ]; then
+          echo "✅ **All tests passed successfully!**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Project | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| tests-SoulSync.Core.Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| tests-SoulSync.Agents.Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| tests-SoulSync.Services.Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| tests-SoulSync.Web.Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Ready for deployment** 🚀" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Some tests failed**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please review the test results and fix failing tests before merging." >> $GITHUB_STEP_SUMMARY
+        fi
+
+  code-coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    needs: test
+    if: success()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Run tests with coverage
+      run: |
+        dotnet test \
+          --configuration Release \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./coverage
+          
+    - name: Install ReportGenerator
+      run: dotnet tool install -g dotnet-reportgenerator-globaltool
+      
+    - name: Generate coverage report
+      run: |
+        reportgenerator \
+          -reports:"coverage/**/coverage.cobertura.xml" \
+          -targetdir:"coverage/report" \
+          -reporttypes:"Html;JsonSummary"
+          
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage/report/
+        retention-days: 30
+        
+    - name: Coverage summary
+      run: |
+        if [ -f "coverage/report/Summary.json" ]; then
+          echo "📊 **Code Coverage Summary**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          # Extract coverage percentage from JSON summary
+          coverage=$(cat coverage/report/Summary.json | grep -o '"linecoverage":"[^"]*"' | cut -d'"' -f4)
+          echo "**Line Coverage**: ${coverage}%" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "View detailed coverage report in the artifacts." >> $GITHUB_STEP_SUMMARY
+        fi
+
+  ci-status:
+    name: CI Status
+    runs-on: ubuntu-latest
+    needs: [build, test, test-summary, code-coverage]
+    if: always()
+    
+    steps:
+    - name: Check CI Status
+      run: |
+        echo "# 🚀 CI Pipeline Status" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Check individual job statuses
+        build_status="${{ needs.build.result }}"
+        test_status="${{ needs.test.result }}"
+        summary_status="${{ needs.test-summary.result }}"
+        coverage_status="${{ needs.code-coverage.result }}"
+        
+        echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "$build_status" == "success" ]; then
+          echo "| 🏗️ Build | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| 🏗️ Build | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "$test_status" == "success" ]; then
+          echo "| 🧪 Tests | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| 🧪 Tests | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "$summary_status" == "success" ]; then
+          echo "| 📋 Summary | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| 📋 Summary | ⚠️ Completed |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "$coverage_status" == "success" ]; then
+          echo "| 📊 Coverage | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+        elif [ "$coverage_status" == "skipped" ]; then
+          echo "| 📊 Coverage | ⏭️ Skipped |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| 📊 Coverage | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Overall status
+        if [ "$build_status" == "success" ] && [ "$test_status" == "success" ]; then
+          echo "🎉 **CI Pipeline Completed Successfully!**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All builds passed" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All tests passed" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Coverage reports generated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Ready for merge and deployment** 🚀" >> $GITHUB_STEP_SUMMARY
+          exit 0
+        else
+          echo "❌ **CI Pipeline Failed**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please fix the failing stages before merging." >> $GITHUB_STEP_SUMMARY
+          exit 1
+        fi
