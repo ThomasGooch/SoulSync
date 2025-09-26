@@ -66,7 +66,11 @@ The pipeline runs tests for:
 ## Artifacts
 
 - **Build Artifacts**: Solution binaries (1 day retention)
-- **Test Results**: TRX files and coverage data (7 days retention)  
+- **Test Results**: TRX files and coverage data with safe naming (7 days retention)
+  - `test-results-tests-SoulSync.Core.Tests`
+  - `test-results-tests-SoulSync.Agents.Tests`  
+  - `test-results-tests-SoulSync.Services.Tests`
+  - `test-results-tests-SoulSync.Web.Tests`
 - **Coverage Reports**: HTML reports and JSON summaries (30 days retention)
 
 ## Usage

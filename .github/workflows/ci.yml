@@ -101,6 +101,12 @@ jobs:
     - name: Build solution
       run: dotnet build --no-restore --configuration Release
       
+    - name: Set project safe name
+      run: |
+        PROJECT_SAFE_NAME="${{ matrix.test-project }}"
+        PROJECT_SAFE_NAME="${PROJECT_SAFE_NAME//\//-}"
+        echo "PROJECT_SAFE_NAME=${PROJECT_SAFE_NAME}" >> $GITHUB_ENV
+
     - name: Run tests for ${{ matrix.test-project }}
       run: |
         dotnet test ${{ matrix.test-project }} \
@@ -109,14 +115,14 @@ jobs:
           --logger trx \
           --logger "console;verbosity=detailed" \
           --collect:"XPlat Code Coverage" \
-          --results-directory ./TestResults/${{ matrix.test-project }}
+          --results-directory "./TestResults/${PROJECT_SAFE_NAME}"
           
     - name: Upload test results
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: test-results-${{ matrix.test-project }}
-        path: ./TestResults/${{ matrix.test-project }}/
+        name: test-results-${{ env.PROJECT_SAFE_NAME }}
+        path: ./TestResults/${{ env.PROJECT_SAFE_NAME }}/
         retention-days: 7
 
   test-summary:
@@ -143,10 +149,10 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Test Project | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|--------------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| SoulSync.Core.Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| SoulSync.Agents.Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| SoulSync.Services.Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| SoulSync.Web.Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| tests-SoulSync.Core.Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| tests-SoulSync.Agents.Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| tests-SoulSync.Services.Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| tests-SoulSync.Web.Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Ready for deployment** 🚀" >> $GITHUB_STEP_SUMMARY
         else
