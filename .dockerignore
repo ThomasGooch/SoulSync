@@ -1,0 +1,39 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!README.md
+docs/
+.github/
+
+# Build artifacts
+**/bin/
+**/obj/
+**/out/
+**/TestResults/
+
+# IDE and editor files
+.vs/
+.vscode/
+*.user
+*.suo
+*.userprefs
+.idea/
+
+# Test coverage
+**/coverage/
+**/*.coverage
+**/*.coveragexml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+**/tmp/
+**/*.tmp
+**/*.temp
+**/*.log

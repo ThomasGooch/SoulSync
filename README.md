@@ -1,7 +1,7 @@
 # 💕 SoulSync - AI-Powered Dating Platform
 
-[![Build](https://github.com/your-username/SoulSyncDatingApp/actions/workflows/build.yml/badge.svg)](https://github.com/your-username/SoulSyncDatingApp/actions/workflows/build.yml)
-[![Tests](https://github.com/your-username/SoulSyncDatingApp/actions/workflows/test.yml/badge.svg)](https://github.com/your-username/SoulSyncDatingApp/actions/workflows/test.yml)
+[![Build](https://github.com/ThomasGooch/SoulSync/actions/workflows/build.yml/badge.svg)](https://github.com/ThomasGooch/SoulSync/actions/workflows/build.yml)
+[![Tests](https://github.com/ThomasGooch/SoulSync/actions/workflows/test.yml/badge.svg)](https://github.com/ThomasGooch/SoulSync/actions/workflows/test.yml)
 [![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/)
 [![GenericAgents](https://img.shields.io/badge/GenericAgents-1.2.0-blue.svg)](https://www.nuget.org/packages/GenericAgents.Core/)
 
@@ -9,16 +9,46 @@
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### Option 1: Docker Desktop (Recommended) 🐳
+
+**Get running in 5 minutes!**
+
+```bash
+# Clone the repository
+git clone https://github.com/ThomasGooch/SoulSync.git
+cd SoulSync
+
+# Start with Docker Desktop
+./docker-start.sh       # macOS/Linux
+docker-start.bat        # Windows
+
+# Or manually
+docker-compose up -d
+```
+
+**Access**: http://localhost:8080
+
+**Test Accounts** (pre-seeded):
+- alex.johnson@soulsync.demo
+- sam.rivera@soulsync.demo
+- jordan.chen@soulsync.demo
+
+📖 **Full Docker Tutorial**: See [RUNBOOK.md](RUNBOOK.md) or [DOCKER-QUICKSTART.md](DOCKER-QUICKSTART.md)
+
+---
+
+### Option 2: Local Development
+
+**Prerequisites**:
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - [Git](https://git-scm.com/)
 - [Visual Studio 2022](https://visualstudio.microsoft.com/) or [VS Code](https://code.visualstudio.com/)
 
-### Setup
+**Setup**:
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/SoulSyncDatingApp.git
-cd SoulSyncDatingApp
+git clone https://github.com/ThomasGooch/SoulSync.git
+cd SoulSync
 
 # Restore dependencies
 dotnet restore
@@ -48,7 +78,7 @@ Visit `https://localhost:7001` to access the application.
 
 ### Project Structure
 ```
-SoulSyncDatingApp/
+SoulSync/
 ├── 📁 src/
 │   ├── 🌐 SoulSync.Web/          # Blazor frontend application
 │   ├── 🔧 SoulSync.Core/         # Domain models & core interfaces  
@@ -173,6 +203,51 @@ Production deployments use environment variables for configuration:
 - `JWT__SigningKey` - JWT token signing key
 - `Azure__KeyVault__Uri` - Secret management
 
+## 🐳 Docker Deployment
+
+### What's Included
+
+The Docker setup provides:
+- **Complete Application Stack**: Web + Database
+- **Pre-seeded Test Data**: 5 user accounts with profiles
+- **Zero Configuration**: Works out of the box
+- **12-Factor Compliance**: Environment-based configuration
+
+### Services
+
+| Service | Port | Description |
+|---------|------|-------------|
+| Web Application | 8080 | Blazor frontend + .NET backend |
+| SQL Server | 1433 | Database with test data |
+
+### Quick Commands
+
+```bash
+# Start
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop
+docker-compose stop
+
+# Restart
+docker-compose restart
+
+# Reset (deletes data)
+docker-compose down -v
+```
+
+📖 **Comprehensive Guide**: [RUNBOOK.md](RUNBOOK.md) - Complete Docker Desktop tutorial with:
+- GenericAgents integration showcase
+- User flow demonstrations
+- Test account details
+- Troubleshooting guide
+- Known limitations documentation
+
+---
+
 ## 📋 Implementation Phases
 
 ### ✅ Phase 1: Foundation & User Management (Completed)
@@ -252,8 +327,32 @@ SoulSync follows [12-Factor App](https://12factor.net/) methodology:
 ## 📞 Support
 
 - **Documentation**: See [DATING-APP-PHASED-IMPLEMENTATION.md](./DATING-APP-PHASED-IMPLEMENTATION.md)
-- **Issues**: [GitHub Issues](https://github.com/your-username/SoulSyncDatingApp/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-username/SoulSyncDatingApp/discussions)
+- **Issues**: [GitHub Issues](https://github.com/ThomasGooch/SoulSync/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/ThomasGooch/SoulSync/discussions)
+
+## ⚠️ Known Limitations
+
+Some features are **implemented in the backend** but not fully available in the Docker environment:
+
+| Feature | Backend | Frontend | Status |
+|---------|---------|----------|--------|
+| Real-time Chat | ✅ Complete (49 tests) | ❌ Missing | Backend only |
+| Advanced Analytics | ⚠️ Basic | ❌ Missing | Planned |
+| Observability Dashboard | ✅ Framework | ❌ Missing | Needs Grafana |
+| Payment Integration | ✅ Logic (39 tests) | ❌ Missing | No Stripe |
+
+**Details**: See [docs/failures/](docs/failures/) for comprehensive documentation on each limitation, implementation guides, and workarounds.
+
+**Note**: The Docker setup uses a **Mock AI Service**. To enable real OpenAI/Azure AI:
+1. Get an API key from OpenAI/Azure
+2. Update `docker-compose.yml`:
+   ```yaml
+   environment:
+     - AI__Provider=OpenAI
+     - AI__ApiKey=sk-your-actual-key
+   ```
+
+---
 
 ## 📄 License
 
@@ -261,4 +360,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with ❤️ using .NET 8, GenericAgents, and AI innovation**
+**Built with ❤️ using .NET 9, Blazor, GenericAgents, and AI innovation**
