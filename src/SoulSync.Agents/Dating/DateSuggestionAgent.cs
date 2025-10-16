@@ -250,26 +250,59 @@ Cost: [Cost Level]";
     
     private List<DateSuggestion> GenerateFallbackSuggestions(Core.Domain.Match match, User user1, User user2, int count)
     {
-        // Generate generic but thoughtful suggestions based on common interests
+        // Generate thoughtful suggestions based on user profiles and common interests
         var suggestions = new List<DateSuggestion>();
         
-        var fallbackOptions = new List<(string Title, string Description, string Location, string Category, string Cost)>
+        // Get common interests from both users
+        var user1Interests = user1.Profile?.InterestTags ?? new List<string>();
+        var user2Interests = user2.Profile?.InterestTags ?? new List<string>();
+        var commonInterests = user1Interests.Intersect(user2Interests).ToList();
+        
+        var fallbackOptions = new List<(string Title, string Description, string Location, string Category, string Cost, List<string> Keywords)>
         {
-            ("Coffee Date", "Start with a casual coffee to get to know each other", "Local Coffee Shop", "dining", "$"),
-            ("Dinner and Conversation", "Enjoy a nice dinner at a restaurant", "Downtown Restaurant", "dining", "$$"),
-            ("Museum Visit", "Explore art and culture together", "Local Museum", "cultural", "$$"),
-            ("Park Walk", "Take a relaxing walk in a scenic park", "City Park", "outdoor", "$"),
-            ("Movie Night", "Catch the latest film together", "Movie Theater", "entertainment", "$$"),
-            ("Live Music", "Enjoy live music at a local venue", "Music Venue", "entertainment", "$$$"),
-            ("Cooking Class", "Learn to make a new dish together", "Cooking School", "activity", "$$$"),
-            ("Picnic", "Outdoor picnic with homemade treats", "Scenic Park", "outdoor", "$"),
-            ("Art Gallery", "Browse contemporary art exhibits", "Art Gallery", "cultural", "$"),
-            ("Wine Tasting", "Sample local wines", "Winery", "dining", "$$$")
+            ("Coffee Date", "Start with a casual coffee to get to know each other", "Local Coffee Shop", "dining", "$", new List<string> { "coffee", "casual", "conversation" }),
+            ("Dinner and Conversation", "Enjoy a nice dinner at a restaurant", "Downtown Restaurant", "dining", "$$", new List<string> { "food", "dining", "restaurant" }),
+            ("Museum Visit", "Explore art and culture together", "Local Museum", "cultural", "$$", new List<string> { "art", "culture", "museum", "history" }),
+            ("Park Walk", "Take a relaxing walk in a scenic park", "City Park", "outdoor", "$", new List<string> { "outdoor", "nature", "walking", "park" }),
+            ("Movie Night", "Catch the latest film together", "Movie Theater", "entertainment", "$$", new List<string> { "movies", "film", "cinema", "entertainment" }),
+            ("Live Music", "Enjoy live music at a local venue", "Music Venue", "entertainment", "$$$", new List<string> { "music", "concert", "live", "entertainment" }),
+            ("Cooking Class", "Learn to make a new dish together", "Cooking School", "activity", "$$$", new List<string> { "cooking", "food", "learning", "class" }),
+            ("Picnic", "Outdoor picnic with homemade treats", "Scenic Park", "outdoor", "$", new List<string> { "outdoor", "nature", "picnic", "food" }),
+            ("Art Gallery", "Browse contemporary art exhibits", "Art Gallery", "cultural", "$", new List<string> { "art", "culture", "gallery", "creative" }),
+            ("Wine Tasting", "Sample local wines", "Winery", "dining", "$$$", new List<string> { "wine", "tasting", "drinks", "food" }),
+            ("Hiking Adventure", "Explore nature trails together", "Nature Trail", "outdoor", "$", new List<string> { "hiking", "outdoor", "nature", "adventure", "sports" }),
+            ("Game Night", "Play board games or video games together", "Gaming Cafe", "entertainment", "$", new List<string> { "games", "gaming", "fun", "entertainment" }),
+            ("Bookstore Browse", "Explore a local bookstore and share favorite reads", "Independent Bookstore", "cultural", "$", new List<string> { "books", "reading", "literature", "culture" }),
+            ("Dance Class", "Learn a new dance style together", "Dance Studio", "activity", "$$", new List<string> { "dance", "dancing", "music", "activity" }),
+            ("Sports Event", "Watch a live sports game together", "Sports Arena", "entertainment", "$$$", new List<string> { "sports", "game", "athletic", "entertainment" })
         };
         
-        // Randomly select suggestions (or we could make this smarter based on profiles)
-        var random = new Random();
-        var selected = fallbackOptions.OrderBy(x => random.Next()).Take(count);
+        // Score suggestions based on interest matching
+        var scoredOptions = fallbackOptions.Select(option => new
+        {
+            Option = option,
+            Score = option.Keywords.Count(k => commonInterests.Any(ci => ci.Contains(k) || k.Contains(ci)))
+        }).ToList();
+        
+        // If we have common interests, prioritize matching suggestions
+        IEnumerable<(string Title, string Description, string Location, string Category, string Cost, List<string> Keywords)> selected;
+        if (commonInterests.Any())
+        {
+            // Sort by score (descending) and take top matches, then randomly select from remaining if needed
+            selected = scoredOptions
+                .OrderByDescending(x => x.Score)
+                .ThenBy(x => Guid.NewGuid()) // Random tiebreaker
+                .Take(count)
+                .Select(x => x.Option);
+        }
+        else
+        {
+            // No common interests, use variety - select diverse categories
+            var random = new Random();
+            selected = fallbackOptions
+                .OrderBy(x => random.Next())
+                .Take(count);
+        }
         
         foreach (var option in selected)
         {

@@ -77,6 +77,12 @@ public class SubscriptionManagementAgent : BaseAgent
             durationMonths = duration;
         }
         
+        // Validate duration (max 24 months to prevent extremely long subscriptions)
+        if (durationMonths < 1 || durationMonths > 24)
+        {
+            return AgentResult.CreateError("Subscription duration must be between 1 and 24 months");
+        }
+        
         // Create subscription
         var startDate = DateTime.UtcNow;
         var subscription = new Core.Domain.Subscription

@@ -308,4 +308,77 @@ public class SubscriptionManagementAgentTests
         result.IsSuccess.Should().BeFalse();
         result.ErrorMessage.Should().Contain("Invalid action");
     }
+    
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(25)]
+    [InlineData(100)]
+    public async Task ExecuteAsync_CreateSubscription_WithInvalidDuration_ShouldReturnError(int invalidDuration)
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var user = new User { Id = userId, Email = "test@example.com", FirstName = "Test", LastName = "User" };
+        
+        _mockUserRepository.GetByIdAsync(userId, Arg.Any<CancellationToken>())
+            .Returns(user);
+        
+        var request = new AgentRequest
+        {
+            Parameters = new Dictionary<string, object>
+            {
+                ["action"] = "create",
+                ["userId"] = userId.ToString(),
+                ["tier"] = "Premium",
+                ["durationMonths"] = invalidDuration
+            }
+        };
+        
+        // Act
+        var result = await _agent.ExecuteAsync(request);
+        
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.ErrorMessage.Should().Contain("duration must be between 1 and 24 months");
+    }
+    
+    [Theory]
+    [InlineData(1)]
+    [InlineData(12)]
+    [InlineData(24)]
+    public async Task ExecuteAsync_CreateSubscription_WithValidDuration_ShouldSucceed(int validDuration)
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var user = new User { Id = userId, Email = "test@example.com", FirstName = "Test", LastName = "User" };
+        
+        _mockUserRepository.GetByIdAsync(userId, Arg.Any<CancellationToken>())
+            .Returns(user);
+        
+        _mockSubscriptionRepository.CreateAsync(Arg.Any<Core.Domain.Subscription>(), Arg.Any<CancellationToken>())
+            .Returns(args => args.Arg<Core.Domain.Subscription>());
+        
+        var request = new AgentRequest
+        {
+            Parameters = new Dictionary<string, object>
+            {
+                ["action"] = "create",
+                ["userId"] = userId.ToString(),
+                ["tier"] = "Premium",
+                ["durationMonths"] = validDuration
+            }
+        };
+        
+        // Act
+        var result = await _agent.ExecuteAsync(request);
+        
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        
+        await _mockSubscriptionRepository.Received(1).CreateAsync(
+            Arg.Is<Core.Domain.Subscription>(s => 
+                s.UserId == userId && 
+                s.EndDate == s.StartDate.AddMonths(validDuration)),
+            Arg.Any<CancellationToken>());
+    }
 }
