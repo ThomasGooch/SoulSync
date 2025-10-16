@@ -19,7 +19,7 @@
                     <p class="mb-0">Let AI help you find your perfect match</p>
                 </div>
                 <div class="card-body">
-                    <EditForm Model="@registrationModel" OnValidSubmit="@HandleRegistration" novalidate>
+                    <EditForm Model="@registrationModel" OnValidSubmit="@HandleRegistration" FormName="RegisterForm" novalidate>
                         <DataAnnotationsValidator />
                         
                         @if (!string.IsNullOrEmpty(registrationModel.RegistrationError))
@@ -327,12 +327,14 @@
 
             if (registrationResult.IsSuccess)
             {
+                var userId = (registrationResult.Data as IDictionary<string, object>)?["userId"]?.ToString() ?? "me";
                 await JSRuntime.InvokeVoidAsync("alert", "🎉 Welcome to SoulSync! Your profile has been created successfully.");
-                Navigation.NavigateTo("/login");
+                Navigation.NavigateTo($"/profile/{userId}");
             }
             else
             {
-                registrationModel.RegistrationError = registrationResult.ErrorMessage ?? "Registration failed. Please try again.";
+                registrationModel = new RegistrationViewModel();
+                Navigation.NavigateTo("/error?message=" + Uri.EscapeDataString(registrationResult.ErrorMessage ?? "Registration failed. Please try again."));
             }
         }
         catch (Exception ex)

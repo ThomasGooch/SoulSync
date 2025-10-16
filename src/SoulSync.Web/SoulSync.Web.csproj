@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\SoulSync.Agents\SoulSync.Agents.csproj" />
     <ProjectReference Include="..\SoulSync.Services\SoulSync.Services.csproj" />
+    <ProjectReference Include="..\SoulSync.Data\SoulSync.Data.csproj" />
   </ItemGroup>
 
 </Project>

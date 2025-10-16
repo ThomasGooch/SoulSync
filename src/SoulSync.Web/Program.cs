@@ -4,6 +4,8 @@ using SoulSync.Core.Authentication;
 using SoulSync.Data.Repositories;
 using SoulSync.Services.Authentication;
 using SoulSync.Services.AI;
+using SoulSync.Data.Context;
+using Microsoft.EntityFrameworkCore;
 using SoulSync.Agents.Registration;
 using SoulSync.Agents.Analysis;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -12,9 +14,14 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Register DbContext for EF Core
+builder.Services.AddDbContext<SoulSyncDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Register repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
