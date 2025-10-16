@@ -433,8 +433,8 @@ Cost: [Cost Level]";
                 ["status"] = s.GetStatus(),
                 ["isAccepted"] = s.IsAccepted,
                 ["isRejected"] = s.IsRejected,
-                ["scheduledDate"] = s.ScheduledDate,
-                ["rating"] = s.Rating
+                ["scheduledDate"] = s.ScheduledDate?.ToString("O") ?? (object)DBNull.Value,
+                ["rating"] = s.Rating.HasValue ? s.Rating.Value : (object)DBNull.Value
             }).ToList()
         });
     }
@@ -448,9 +448,9 @@ Cost: [Cost Level]";
             ["status"] = suggestion.GetStatus(),
             ["isAccepted"] = suggestion.IsAccepted,
             ["isRejected"] = suggestion.IsRejected,
-            ["scheduledDate"] = suggestion.ScheduledDate,
+            ["scheduledDate"] = suggestion.ScheduledDate?.ToString("O") ?? (object)DBNull.Value,
             ["isCompleted"] = suggestion.IsCompleted,
-            ["rating"] = suggestion.Rating
+            ["rating"] = suggestion.Rating.HasValue ? suggestion.Rating.Value : (object)DBNull.Value
         });
     }
 }
