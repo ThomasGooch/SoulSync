@@ -1,7 +1,7 @@
 # 💕 SoulSync - AI-Powered Dating Platform
 
-[![Build](https://github.com/your-username/SoulSyncDatingApp/actions/workflows/build.yml/badge.svg)](https://github.com/your-username/SoulSyncDatingApp/actions/workflows/build.yml)
-[![Tests](https://github.com/your-username/SoulSyncDatingApp/actions/workflows/test.yml/badge.svg)](https://github.com/your-username/SoulSyncDatingApp/actions/workflows/test.yml)
+[![Build](https://github.com/ThomasGooch/SoulSync/actions/workflows/build.yml/badge.svg)](https://github.com/ThomasGooch/SoulSync/actions/workflows/build.yml)
+[![Tests](https://github.com/ThomasGooch/SoulSync/actions/workflows/test.yml/badge.svg)](https://github.com/ThomasGooch/SoulSync/actions/workflows/test.yml)
 [![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/)
 [![GenericAgents](https://img.shields.io/badge/GenericAgents-1.2.0-blue.svg)](https://www.nuget.org/packages/GenericAgents.Core/)
 
@@ -78,7 +78,7 @@ Visit `https://localhost:7001` to access the application.
 
 ### Project Structure
 ```
-SoulSyncDatingApp/
+SoulSync/
 ├── 📁 src/
 │   ├── 🌐 SoulSync.Web/          # Blazor frontend application
 │   ├── 🔧 SoulSync.Core/         # Domain models & core interfaces  
@@ -327,8 +327,8 @@ SoulSync follows [12-Factor App](https://12factor.net/) methodology:
 ## 📞 Support
 
 - **Documentation**: See [DATING-APP-PHASED-IMPLEMENTATION.md](./DATING-APP-PHASED-IMPLEMENTATION.md)
-- **Issues**: [GitHub Issues](https://github.com/your-username/SoulSyncDatingApp/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-username/SoulSyncDatingApp/discussions)
+- **Issues**: [GitHub Issues](https://github.com/ThomasGooch/SoulSync/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/ThomasGooch/SoulSync/discussions)
 
 ## ⚠️ Known Limitations
 
