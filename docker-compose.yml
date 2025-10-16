@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # SQL Server Database
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: soulsync-db
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=SoulSync2024!SecurePassword
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - soulsync-db-data:/var/opt/mssql
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - soulsync-network
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "SoulSync2024!SecurePassword" -C -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # SoulSync Web Application
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: soulsync-web
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Server=db,1433;Database=SoulSyncDb;User Id=sa;Password=SoulSync2024!SecurePassword;TrustServerCertificate=True;
+      - JWT__SigningKey=super-secret-key-that-is-at-least-32-characters-long-for-security-purposes
+      - JWT__Issuer=SoulSync
+      - JWT__Audience=SoulSyncUsers
+      - AI__Provider=Mock
+      - AI__ModelId=gpt-4
+      - AI__MaxTokens=2000
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - soulsync-network
+
+networks:
+  soulsync-network:
+    driver: bridge
+
+volumes:
+  soulsync-db-data:
+    driver: local
