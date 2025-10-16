@@ -1,0 +1,203 @@
+@page "/chat/{ConversationId}"
+@using SoulSync.Core.Domain
+@using SoulSync.Core.Enums
+@using SoulSync.Core.Interfaces
+@inject IMessageRepository MessageRepository
+@inject IConversationRepository ConversationRepository
+
+<PageTitle>Chat - SoulSync</PageTitle>
+
+<div class="container-fluid py-4 chat-container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="mb-0">💬 Chat</h5>
+                </div>
+
+                <div class="card-body chat-messages p-4" style="height: 500px; overflow-y: auto;">
+                    @if (_isLoading)
+                    {
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (!_messages.Any())
+                    {
+                        <div class="text-center text-muted py-5">
+                            <p>No messages yet</p>
+                            <p class="small">Start a conversation!</p>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var message in _messages)
+                        {
+                            var isCurrentUser = message.SenderId == _currentUserId;
+                            <div class="message-bubble @(isCurrentUser ? "message-sent" : "message-received") mb-3">
+                                <div class="@(isCurrentUser ? "text-end" : "text-start")">
+                                    <div class="d-inline-block px-3 py-2 rounded @(isCurrentUser ? "bg-primary text-white" : "bg-light")">
+                                        <p class="mb-0">@message.Content</p>
+                                        <small class="@(isCurrentUser ? "text-white-50" : "text-muted")">
+                                            @message.CreatedAt.ToString("HH:mm")
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+
+                <div class="card-footer bg-white py-3">
+                    <EditForm Model="@_messageInput" OnValidSubmit="@SendMessage">
+                        <div class="input-group">
+                            <InputText @bind-Value="_messageInput.Content" 
+                                      type="text"
+                                      class="form-control" 
+                                      placeholder="Type your message..." 
+                                      disabled="@_isSending" />
+                            <button type="submit" 
+                                    class="btn btn-primary" 
+                                    disabled="@(_isSending || string.IsNullOrWhiteSpace(_messageInput.Content))">
+                                @if (_isSending)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1"></span>
+                                }
+                                Send
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string ConversationId { get; set; } = string.Empty;
+
+    [Parameter]
+    public string CurrentUserId { get; set; } = string.Empty;
+
+    private List<Message> _messages = new();
+    private MessageInputModel _messageInput = new();
+    private bool _isLoading = true;
+    private bool _isSending = false;
+    private Guid _conversationId;
+    private Guid _currentUserId;
+
+    private class MessageInputModel
+    {
+        public string Content { get; set; } = string.Empty;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Guid.TryParse(ConversationId, out _conversationId) && 
+            Guid.TryParse(CurrentUserId, out _currentUserId))
+        {
+            await LoadMessages();
+        }
+    }
+
+    private async Task LoadMessages()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var messages = await MessageRepository.GetMessagesByConversationIdAsync(_conversationId);
+            _messages = messages.OrderBy(m => m.CreatedAt).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading messages: {ex.Message}");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(_messageInput.Content))
+            return;
+
+        _isSending = true;
+
+        try
+        {
+            var conversation = await ConversationRepository.GetByIdAsync(_conversationId);
+            if (conversation == null)
+                return;
+
+            var receiverId = conversation.User1Id == _currentUserId 
+                ? conversation.User2Id 
+                : conversation.User1Id;
+
+            var message = new Message
+            {
+                SenderId = _currentUserId,
+                ReceiverId = receiverId,
+                ConversationId = _conversationId,
+                Content = _messageInput.Content,
+                Status = MessageStatus.Sent
+            };
+
+            var createdMessage = await MessageRepository.CreateAsync(message);
+            _messages.Add(createdMessage);
+            _messageInput.Content = string.Empty;
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending message: {ex.Message}");
+        }
+        finally
+        {
+            _isSending = false;
+        }
+    }
+}
+
+<style>
+    .chat-container {
+        background-color: #f8f9fa;
+    }
+
+    .chat-messages {
+        background-color: #ffffff;
+    }
+
+    .message-bubble {
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    .message-sent {
+        margin-left: 20%;
+    }
+
+    .message-received {
+        margin-right: 20%;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .bg-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+</style>

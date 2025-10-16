@@ -1,0 +1,153 @@
+@page "/matches"
+@using SoulSync.Core.Domain
+@using SoulSync.Core.Interfaces
+@inject IMatchRepository MatchRepository
+@inject NavigationManager Navigation
+
+<PageTitle>Matches - SoulSync</PageTitle>
+
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="fw-bold">💕 Your Matches</h2>
+            <p class="text-muted">Discover people who match your interests and preferences</p>
+        </div>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Finding your matches...</p>
+        </div>
+    }
+    else if (!_matches.Any())
+    {
+        <div class="alert alert-info text-center" role="alert">
+            <h4>No matches found yet</h4>
+            <p>Check back later for new matches!</p>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var match in _matches)
+            {
+                var otherUser = match.User2 ?? match.User1;
+                if (otherUser != null)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 shadow-sm hover-card">
+                            <div class="card-body p-4">
+                                <div class="text-center mb-3">
+                                    <img src="https://ui-avatars.com/api/?name=@(otherUser.FirstName)+@(otherUser.LastName)&size=150&background=667eea&color=fff" 
+                                         class="rounded-circle mb-2" 
+                                         alt="@otherUser.FullName" 
+                                         width="150" 
+                                         height="150"/>
+                                    <h5 class="card-title fw-bold mb-0">@otherUser.FullName</h5>
+                                    <p class="text-muted">@otherUser.Age years old</p>
+                                    
+                                    <div class="compatibility-badge mb-3">
+                                        <span class="badge bg-success px-3 py-2">
+                                            @match.CompatibilityScore% Match
+                                        </span>
+                                    </div>
+                                </div>
+
+                                @if (!string.IsNullOrEmpty(otherUser.Bio))
+                                {
+                                    <p class="card-text small text-muted mb-3">
+                                        @(otherUser.Bio.Length > 100 ? otherUser.Bio.Substring(0, 100) + "..." : otherUser.Bio)
+                                    </p>
+                                }
+
+                                @if (otherUser.Profile?.InterestTags.Any() == true)
+                                {
+                                    <div class="mb-3">
+                                        <div class="d-flex flex-wrap gap-1">
+                                            @foreach (var interest in otherUser.Profile.InterestTags.Take(3))
+                                            {
+                                                <span class="badge bg-light text-dark">@interest</span>
+                                            }
+                                            @if (otherUser.Profile.InterestTags.Count > 3)
+                                            {
+                                                <span class="badge bg-light text-dark">+@(otherUser.Profile.InterestTags.Count - 3) more</span>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary" @onclick="() => ViewProfile(otherUser.Id)">
+                                        View Profile
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string CurrentUserId { get; set; } = string.Empty;
+
+    private List<Match> _matches = new();
+    private bool _isLoading = true;
+    private Guid _currentUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Guid.TryParse(CurrentUserId, out _currentUserId))
+        {
+            await LoadMatches();
+        }
+    }
+
+    private async Task LoadMatches()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var matches = await MatchRepository.GetMatchesForUserAsync(_currentUserId);
+            _matches = matches.ToList();
+        }
+        catch (Exception ex)
+        {
+            // Log error
+            Console.WriteLine($"Error loading matches: {ex.Message}");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void ViewProfile(Guid userId)
+    {
+        Navigation.NavigateTo($"/profile/{userId}");
+    }
+}
+
+<style>
+    .hover-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+    }
+
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .compatibility-badge .badge {
+        font-size: 1rem;
+    }
+</style>
