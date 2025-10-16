@@ -1104,8 +1104,6 @@ This runbook demonstrates how GenericAgents NuGet packages enable:
 - Container-based deployment
 - Environment-specific configuration
 - Comprehensive testing (217 tests)
-- Environment-specific configuration
-- Comprehensive testing (197 tests)
 
 ✅ **Scalable AI Workflows**
 - Multi-agent orchestration
